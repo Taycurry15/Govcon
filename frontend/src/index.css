@@ -1,0 +1,162 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-gray-200;
+  }
+
+  body {
+    @apply bg-gray-50 text-gray-900 antialiased;
+    font-feature-settings: 'kern' 1;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Apple-style smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@layer components {
+  /* Apple-style Buttons */
+  .btn {
+    @apply inline-flex items-center justify-center rounded-apple font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40 active:scale-[0.98];
+  }
+
+  .btn-primary {
+    @apply btn bg-primary-500 text-white hover:bg-primary-600 shadow-apple active:shadow-apple-sm;
+  }
+
+  .btn-secondary {
+    @apply btn bg-white text-gray-900 hover:bg-gray-50 border border-gray-200 shadow-apple-sm active:bg-gray-100;
+  }
+
+  .btn-danger {
+    @apply btn bg-systemRed text-white hover:bg-red-600 shadow-apple active:shadow-apple-sm;
+  }
+
+  .btn-success {
+    @apply btn bg-systemGreen text-white hover:bg-green-600 shadow-apple active:shadow-apple-sm;
+  }
+
+  /* Apple-style Cards with glassmorphism */
+  .card {
+    @apply bg-white/95 backdrop-blur-apple rounded-apple-lg shadow-apple border border-gray-200/50 transition-all duration-300 hover:shadow-apple-md;
+  }
+
+  .card-glass {
+    @apply bg-white/70 backdrop-blur-apple rounded-apple-lg shadow-apple-lg border border-white/50;
+  }
+
+  /* Apple-style Inputs */
+  .input {
+    @apply flex h-11 w-full rounded-apple border border-gray-300/70 bg-white/95 px-4 py-2.5 text-[15px] leading-tight ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 focus-visible:border-primary-500 transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-gray-50;
+  }
+
+  /* Apple-style Badges */
+  .badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold tracking-wide;
+  }
+
+  .badge-sdvosb {
+    @apply bg-systemPurple/10 text-systemPurple ring-1 ring-systemPurple/20;
+  }
+
+  .badge-vosb {
+    @apply bg-primary-500/10 text-primary-600 ring-1 ring-primary-500/20;
+  }
+
+  .badge-sb {
+    @apply bg-systemGreen/10 text-systemGreen ring-1 ring-systemGreen/20;
+  }
+
+  .badge-success {
+    @apply bg-systemGreen/10 text-systemGreen ring-1 ring-systemGreen/20;
+  }
+
+  .badge-warning {
+    @apply bg-systemYellow/10 text-amber-700 ring-1 ring-systemYellow/20;
+  }
+
+  .badge-danger {
+    @apply bg-systemRed/10 text-systemRed ring-1 ring-systemRed/20;
+  }
+
+  .badge-info {
+    @apply bg-primary-500/10 text-primary-600 ring-1 ring-primary-500/20;
+  }
+
+  /* Apple-style Section Headers */
+  .section-header {
+    @apply text-2xl font-semibold tracking-tight text-gray-900;
+  }
+
+  .section-subtitle {
+    @apply text-base text-gray-500 font-normal;
+  }
+
+  /* Apple-style List Items */
+  .list-item {
+    @apply p-4 rounded-apple bg-white border border-gray-200/50 hover:border-gray-300 hover:shadow-apple-sm transition-all duration-200 cursor-pointer active:scale-[0.99];
+  }
+
+  /* Apple-style Divider */
+  .divider {
+    @apply border-t border-gray-200/60;
+  }
+
+  /* Apple-style Modal/Dialog Background */
+  .modal-overlay {
+    @apply fixed inset-0 bg-black/30 backdrop-blur-sm;
+  }
+
+  /* Apple-style Navigation */
+  .nav-item {
+    @apply px-4 py-2 rounded-apple text-gray-700 hover:bg-gray-100/80 transition-all duration-200 font-medium text-[15px] active:scale-[0.97];
+  }
+
+  .nav-item-active {
+    @apply bg-primary-500/10 text-primary-600 hover:bg-primary-500/15;
+  }
+
+  /* Apple-style Status Indicators */
+  .status-dot {
+    @apply inline-block w-2 h-2 rounded-full;
+  }
+
+  .status-online {
+    @apply bg-systemGreen animate-pulse;
+  }
+
+  .status-offline {
+    @apply bg-gray-400;
+  }
+
+  .status-warning {
+    @apply bg-systemYellow;
+  }
+
+  .status-error {
+    @apply bg-systemRed;
+  }
+}
+
+/* Custom animations for Apple-like feel */
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.shimmer {
+  animation: shimmer 2s infinite;
+  background: linear-gradient(to right, transparent 0%, rgba(255,255,255,0.8) 50%, transparent 100%);
+  background-size: 1000px 100%;
+}

@@ -1,0 +1,208 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: govcon-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-bronze}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DB: ${POSTGRES_DB:-govcon}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-bronze} -d ${POSTGRES_DB:-govcon}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - govcon-network
+    # Resource limits for cost optimization
+    mem_limit: 512m
+    mem_reservation: 256m
+    cpus: 0.5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: govcon-redis
+    command: redis-server --appendonly yes --maxmemory 128mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - govcon-network
+    # Resource limits for cost optimization
+    mem_limit: 128m
+    mem_reservation: 64m
+    cpus: 0.25
+
+  # Qdrant Vector Database
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: govcon-qdrant
+    volumes:
+      - qdrant_data:/qdrant/storage
+    environment:
+      QDRANT__SERVICE__GRPC_PORT: 6334
+      # Memory optimization
+      QDRANT__STORAGE__OPTIMIZERS__MEMMAP_THRESHOLD: 10000
+    restart: unless-stopped
+    networks:
+      - govcon-network
+    # Resource limits for cost optimization
+    mem_limit: 512m
+    mem_reservation: 256m
+    cpus: 0.5
+
+  # MinIO Object Storage (S3-compatible)
+  # Note: Consider migrating to Cloudflare R2 for production (free tier)
+  minio:
+    image: minio/minio:latest
+    container_name: govcon-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-bronze}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-bronze_secret_change_me}
+      # Performance optimization
+      MINIO_STORAGE_CLASS_STANDARD: EC:0
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - govcon-network
+    # Resource limits for cost optimization
+    mem_limit: 256m
+    mem_reservation: 128m
+    cpus: 0.25
+
+  # MinIO Client - Create buckets on startup
+  minio-init:
+    image: minio/mc:latest
+    container_name: govcon-minio-init
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      sleep 10;
+      /usr/bin/mc alias set myminio http://minio:9000 ${MINIO_ACCESS_KEY:-bronze} ${MINIO_SECRET_KEY:-bronze_secret_change_me};
+      /usr/bin/mc mb myminio/${MINIO_BUCKET:-govcon-artifacts} --ignore-existing;
+      /usr/bin/mc anonymous set download myminio/${MINIO_BUCKET:-govcon-artifacts};
+      exit 0;
+      "
+    networks:
+      - govcon-network
+
+  # GovCon API Service
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - BUILDKIT_INLINE_CACHE=1
+    container_name: govcon-api
+    command: uvicorn govcon.api.main:app --host 0.0.0.0 --port 8000 --workers 2
+    environment:
+      - POSTGRES_URL=postgresql://${POSTGRES_USER:-bronze}:${POSTGRES_PASSWORD:-password}@postgres:5432/${POSTGRES_DB:-govcon}
+      - REDIS_URL=redis://redis:6379/0
+      - QDRANT_URL=http://qdrant:6333
+      - MINIO_ENDPOINT=minio:9000
+      # Use OpenAI API in production, not local Ollama
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+    env_file:
+      - .env
+    volumes:
+      - ./output:/app/output
+      - ./logs:/app/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+      minio:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - govcon-network
+    # Resource limits for cost optimization
+    mem_limit: 1g
+    mem_reservation: 512m
+    cpus: 1.0
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Frontend Web UI (optimized build)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=${API_URL:-https://api.yourdomain.com}
+    container_name: govcon-frontend
+    restart: unless-stopped
+    networks:
+      - govcon-network
+    # Resource limits for cost optimization
+    mem_limit: 64m
+    mem_reservation: 32m
+    cpus: 0.1
+
+  # Caddy (automatic HTTPS with Let's Encrypt)
+  caddy:
+    image: caddy:2-alpine
+    container_name: govcon-caddy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - api
+      - frontend
+    restart: unless-stopped
+    networks:
+      - govcon-network
+    # Resource limits for cost optimization
+    mem_limit: 128m
+    mem_reservation: 64m
+    cpus: 0.25
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  qdrant_data:
+    driver: local
+  minio_data:
+    driver: local
+  caddy_data:
+    driver: local
+  caddy_config:
+    driver: local
+
+networks:
+  govcon-network:
+    driver: bridge

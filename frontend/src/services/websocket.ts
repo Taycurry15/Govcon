@@ -80,7 +80,7 @@ class WebSocketService {
    * Disconnect from all WebSocket channels
    */
   disconnectAll(): void {
-    this.sockets.forEach((socket, channel) => {
+    this.sockets.forEach((socket) => {
       socket.close();
     });
     this.sockets.clear();

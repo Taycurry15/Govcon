@@ -97,11 +97,25 @@ async def login(
         Access token
     """
     # Find user by email
+    logger.info(f"Login attempt for email: {form_data.username}")
     query = select(User).where(User.email == form_data.username, User.is_deleted.is_(False))
     result = await db.execute(query)
     user = result.scalar_one_or_none()
 
-    if not user or not verify_password(form_data.password, user.hashed_password):
+    if not user:
+        logger.warning(f"User not found: {form_data.username}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    logger.info(f"User found: {user.email}, checking password...")
+    password_valid = verify_password(form_data.password, user.hashed_password)
+    logger.info(f"Password verification result: {password_valid}")
+
+    if not password_valid:
+        logger.warning(f"Invalid password for user: {user.email}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",

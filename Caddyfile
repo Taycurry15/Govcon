@@ -1,16 +1,16 @@
 # Caddyfile - Automatic HTTPS with Let's Encrypt
-# Replace yourdomain.com with your actual domain
+# Configured for myn8napp.org
 
 {
     # Email for Let's Encrypt notifications
-    email admin@yourdomain.com
+    email admin@myn8napp.org
 
     # Use production Let's Encrypt (comment out for testing)
     # acme_ca https://acme-v02.api.letsencrypt.org/directory
 }
 
 # Frontend - Main site
-yourdomain.com, www.yourdomain.com {
+myn8napp.org, www.myn8napp.org {
     # Reverse proxy to frontend
     reverse_proxy frontend:80
 
@@ -41,7 +41,7 @@ yourdomain.com, www.yourdomain.com {
 }
 
 # API Backend
-api.yourdomain.com {
+api.myn8napp.org {
     # Reverse proxy to API
     reverse_proxy api:8000 {
         # Health check
@@ -55,7 +55,7 @@ api.yourdomain.com {
 
     # CORS headers (adjust as needed)
     header {
-        Access-Control-Allow-Origin "https://yourdomain.com"
+        Access-Control-Allow-Origin "https://myn8napp.org"
         Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
         Access-Control-Allow-Headers "Content-Type, Authorization"
         Access-Control-Max-Age "3600"
@@ -94,7 +94,7 @@ api.yourdomain.com {
 }
 
 # MinIO Console (optional, for admin access)
-minio.yourdomain.com {
+minio.myn8napp.org {
     reverse_proxy minio:9001
 
     # Basic auth (generate with: caddy hash-password)

@@ -33,7 +33,7 @@ class ApiService {
 
     // Response interceptor
     this.client.interceptors.response.use(
-      (response) => response,
+      (response) => response.data,
       (error) => {
         // Handle errors globally
         console.error('API Error:', error);
@@ -212,6 +212,19 @@ class ApiService {
     return this.client.get(`/api/workflow/${workflowId}/status`);
   }
 
+  // Authentication endpoints
+  async login(email: string, password: string) {
+    const formData = new URLSearchParams();
+    formData.append('username', email);
+    formData.append('password', password);
+
+    return this.client.post('/api/users/token', formData, {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+    });
+  }
+
   // Users endpoints
   async getCurrentUser() {
     return this.client.get('/api/users/me');
@@ -239,8 +252,7 @@ class ApiService {
 
   // Generic request method for custom endpoints
   async request<T = any>(config: AxiosRequestConfig): Promise<T> {
-    const response = await this.client.request(config);
-    return response.data;
+    return this.client.request(config);
   }
 }
 
